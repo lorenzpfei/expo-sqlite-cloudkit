@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  linux:
+    name: Linux (TypeScript, Swift core)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: scripts/swift-test-linux.sh
+
+  macos-swift:
+    name: macOS (Swift core, CloudKit adapter)
+    runs-on: macos-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - run: swift test
+        working-directory: packages/sync-core
+
+  macos-example:
+    name: macOS (example app for iOS Simulator)
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: npx expo prebuild --platform ios --clean
+        working-directory: example
+      - name: Check that the config plugin was applied
+        working-directory: example/ios
+        run: |
+          pb() { /usr/libexec/PlistBuddy -c "Print :$1" "$2"; }
+          pb com.apple.developer.icloud-container-identifiers:0 SyncNotes/SyncNotes.entitlements | grep -qx iCloud.com.example.syncnotes
+          pb com.apple.developer.icloud-services:0 SyncNotes/SyncNotes.entitlements | grep -qx CloudKit
+          pb aps-environment SyncNotes/SyncNotes.entitlements | grep -qx development
+          pb UIBackgroundModes SyncNotes/Info.plist | grep -q remote-notification
+      - name: Build for iOS Simulator
+        working-directory: example/ios
+        run: |
+          xcodebuild \
+            -workspace SyncNotes.xcworkspace \
+            -scheme SyncNotes \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build > xcodebuild.log 2>&1 || true
+          grep -E ' error: |\*\* BUILD' xcodebuild.log || true
+          grep -q 'BUILD SUCCEEDED' xcodebuild.log
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: example/ios/xcodebuild.log
+          if-no-files-found: ignore

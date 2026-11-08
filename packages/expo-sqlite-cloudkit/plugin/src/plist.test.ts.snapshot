@@ -1,0 +1,46 @@
+exports[`Info.plist for a fresh app 1`] = `
+{
+  "CFBundleDisplayName": "Notes",
+  "UIBackgroundModes": [
+    "remote-notification"
+  ]
+}
+`;
+
+exports[`Info.plist keeps existing background modes 1`] = `
+{
+  "UIBackgroundModes": [
+    "audio",
+    "remote-notification"
+  ]
+}
+`;
+
+exports[`entitlements for a fresh app 1`] = `
+{
+  "aps-environment": "development",
+  "com.apple.developer.icloud-container-identifiers": [
+    "iCloud.com.example.notes"
+  ],
+  "com.apple.developer.icloud-services": [
+    "CloudKit"
+  ]
+}
+`;
+
+exports[`entitlements merge with existing iCloud and push settings 1`] = `
+{
+  "aps-environment": "production",
+  "com.apple.developer.icloud-container-identifiers": [
+    "iCloud.com.example.other",
+    "iCloud.com.example.notes"
+  ],
+  "com.apple.developer.icloud-services": [
+    "CloudDocuments",
+    "CloudKit"
+  ],
+  "com.apple.developer.associated-domains": [
+    "applinks:example.com"
+  ]
+}
+`;

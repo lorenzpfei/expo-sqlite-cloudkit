@@ -1,0 +1,13 @@
+node_modules/
+build/
+.build/
+.swiftpm/
+*.tgz
+.DS_Store
+.expo/
+example/ios/
+example/android/
+xcuserdata/
+DerivedData/
+example/.env
+packages/expo-sqlite-cloudkit/README.md

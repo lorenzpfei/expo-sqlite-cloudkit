@@ -1,0 +1,38 @@
+{
+  "ddl": [
+    "CREATE TABLE notes (id TEXT PRIMARY KEY NOT NULL, title TEXT NOT NULL, body TEXT NOT NULL DEFAULT '', updated_at INTEGER NOT NULL, deleted_at INTEGER)"
+  ],
+  "schema": {
+    "version": "{\"format\":1,\"tables\":[{\"name\":\"notes\",\"primaryKey\":[\"id\"],\"updatedAtColumn\":\"updated_at\",\"deletedAtColumn\":\"deleted_at\",\"encryptedColumns\":[\"body\"]}]}",
+    "tables": [
+      {
+        "name": "notes",
+        "primaryKey": [
+          "id"
+        ],
+        "updatedAtColumn": "updated_at",
+        "deletedAtColumn": "deleted_at",
+        "encryptedColumns": [
+          "body"
+        ]
+      }
+    ],
+    "installSql": [
+      "CREATE TABLE IF NOT EXISTS _sync_meta (key TEXT PRIMARY KEY NOT NULL, value TEXT)",
+      "INSERT OR IGNORE INTO _sync_meta (key, value) VALUES ('applying', '0')",
+      "CREATE TABLE IF NOT EXISTS _sync_outbox (table_name TEXT NOT NULL, pk_json TEXT NOT NULL, op TEXT NOT NULL CHECK (op IN ('upsert', 'delete')), changed_at INTEGER NOT NULL, version INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (table_name, pk_json)) WITHOUT ROWID",
+      "CREATE TABLE IF NOT EXISTS _sync_records (record_name TEXT PRIMARY KEY NOT NULL, table_name TEXT NOT NULL, system_fields BLOB NOT NULL) WITHOUT ROWID",
+      "CREATE TRIGGER \"_sync_notes_insert\" AFTER INSERT ON \"notes\" WHEN (SELECT value FROM _sync_meta WHERE key = 'applying') IS NOT '1' BEGIN INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'notes', json_array(CAST(NEW.\"id\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE true ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; END",
+      "CREATE TRIGGER \"_sync_notes_update\" AFTER UPDATE ON \"notes\" WHEN (SELECT value FROM _sync_meta WHERE key = 'applying') IS NOT '1' BEGIN INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'notes', json_array(CAST(OLD.\"id\" AS TEXT)), 'delete', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE OLD.\"id\" IS NOT NEW.\"id\" ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'notes', json_array(CAST(NEW.\"id\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE true ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; END",
+      "CREATE TRIGGER \"_sync_notes_delete\" AFTER DELETE ON \"notes\" WHEN (SELECT value FROM _sync_meta WHERE key = 'applying') IS NOT '1' BEGIN INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'notes', json_array(CAST(OLD.\"id\" AS TEXT)), 'delete', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE true ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; END",
+      "INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'notes', json_array(CAST(\"id\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) FROM \"notes\" WHERE true AND NOT EXISTS (SELECT 1 FROM _sync_meta WHERE key = 'backfilled:notes') ON CONFLICT (table_name, pk_json) DO NOTHING",
+      "INSERT OR IGNORE INTO _sync_meta (key, value) VALUES ('backfilled:notes', '1')",
+      "INSERT INTO _sync_meta (key, value) VALUES ('schema_version', '{\"format\":1,\"tables\":[{\"name\":\"notes\",\"primaryKey\":[\"id\"],\"updatedAtColumn\":\"updated_at\",\"deletedAtColumn\":\"deleted_at\",\"encryptedColumns\":[\"body\"]}]}') ON CONFLICT (key) DO UPDATE SET value = excluded.value"
+    ],
+    "resetSql": [
+      "DELETE FROM _sync_outbox",
+      "DELETE FROM _sync_records",
+      "INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'notes', json_array(CAST(\"id\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) FROM \"notes\" WHERE true ON CONFLICT (table_name, pk_json) DO NOTHING"
+    ]
+  }
+}

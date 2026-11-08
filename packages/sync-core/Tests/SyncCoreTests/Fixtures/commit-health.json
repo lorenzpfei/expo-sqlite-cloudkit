@@ -1,0 +1,108 @@
+{
+  "ddl": [
+    "CREATE TABLE `health_days` (`user_id` text DEFAULT 'local' NOT NULL, `day` text NOT NULL, `steps` integer DEFAULT 0 NOT NULL, `active_energy_kcal` real DEFAULT 0 NOT NULL, `exercise_ms` integer DEFAULT 0 NOT NULL, `distance_meters` real DEFAULT 0 NOT NULL, `stand_hours` integer DEFAULT 0 NOT NULL, `hr_avg` real, `hr_min` real, `hr_max` real, `resting_hr_avg` real, `hrv_avg` real, `vo2max_avg` real, `oxygen_saturation_avg` real, `respiratory_rate_avg` real, `source` text, `created_at` integer DEFAULT (strftime('%s','now')) NOT NULL, `updated_at` integer DEFAULT (strftime('%s','now')) NOT NULL, PRIMARY KEY(`user_id`, `day`))",
+    "CREATE TABLE `sleep_days` (`user_id` text DEFAULT 'local' NOT NULL, `day` text NOT NULL, `in_bed_ms` integer DEFAULT 0 NOT NULL, `awake_ms` integer DEFAULT 0 NOT NULL, `core_ms` integer DEFAULT 0 NOT NULL, `deep_ms` integer DEFAULT 0 NOT NULL, `rem_ms` integer DEFAULT 0 NOT NULL, `unspecified_ms` integer DEFAULT 0 NOT NULL, `total_in_bed_ms` integer DEFAULT 0 NOT NULL, `total_asleep_ms` integer DEFAULT 0 NOT NULL, `source` text, `created_at` integer DEFAULT (strftime('%s','now')) NOT NULL, `updated_at` integer DEFAULT (strftime('%s','now')) NOT NULL, PRIMARY KEY(`user_id`, `day`))",
+    "CREATE TABLE `intake_items` (`user_id` text DEFAULT 'local' NOT NULL, `id` text NOT NULL, `name` text NOT NULL, `unit` text NOT NULL, `kind` text NOT NULL, `is_acute` integer DEFAULT 0 NOT NULL, `notes` text, `created_at` integer DEFAULT (strftime('%s','now')) NOT NULL, `updated_at` integer DEFAULT (strftime('%s','now')) NOT NULL, `deleted_at` integer, PRIMARY KEY(`user_id`, `id`))",
+    "ALTER TABLE `intake_items` ADD `important` integer DEFAULT 0 NOT NULL",
+    "CREATE TABLE `pain_episodes` (`user_id` text DEFAULT 'local' NOT NULL, `id` text NOT NULL, `type` text NOT NULL, `day` text NOT NULL, `started_at` text NOT NULL, `ended_at` text, `intensity` integer, `side` text, `notes` text, `created_at` integer DEFAULT (strftime('%s','now')) NOT NULL, `updated_at` integer DEFAULT (strftime('%s','now')) NOT NULL, `deleted_at` integer, PRIMARY KEY(`user_id`, `id`))",
+    "CREATE TABLE `diary_entries` (`user_id` text DEFAULT 'local' NOT NULL, `id` text NOT NULL, `day` text NOT NULL, `written_at` text NOT NULL, `body` text NOT NULL, `created_at` integer DEFAULT (strftime('%s','now')) NOT NULL, `updated_at` integer DEFAULT (strftime('%s','now')) NOT NULL, `deleted_at` integer, PRIMARY KEY(`user_id`, `id`))"
+  ],
+  "schema": {
+    "version": "{\"format\":1,\"tables\":[{\"name\":\"health_days\",\"primaryKey\":[\"user_id\",\"day\"],\"updatedAtColumn\":\"updated_at\",\"deletedAtColumn\":null,\"encryptedColumns\":[]},{\"name\":\"sleep_days\",\"primaryKey\":[\"user_id\",\"day\"],\"updatedAtColumn\":\"updated_at\",\"deletedAtColumn\":null,\"encryptedColumns\":[]},{\"name\":\"intake_items\",\"primaryKey\":[\"user_id\",\"id\"],\"updatedAtColumn\":\"updated_at\",\"deletedAtColumn\":\"deleted_at\",\"encryptedColumns\":[]},{\"name\":\"pain_episodes\",\"primaryKey\":[\"user_id\",\"id\"],\"updatedAtColumn\":\"updated_at\",\"deletedAtColumn\":\"deleted_at\",\"encryptedColumns\":[\"notes\"]},{\"name\":\"diary_entries\",\"primaryKey\":[\"user_id\",\"id\"],\"updatedAtColumn\":\"updated_at\",\"deletedAtColumn\":\"deleted_at\",\"encryptedColumns\":\"all\"}]}",
+    "tables": [
+      {
+        "name": "health_days",
+        "primaryKey": [
+          "user_id",
+          "day"
+        ],
+        "updatedAtColumn": "updated_at",
+        "deletedAtColumn": null,
+        "encryptedColumns": []
+      },
+      {
+        "name": "sleep_days",
+        "primaryKey": [
+          "user_id",
+          "day"
+        ],
+        "updatedAtColumn": "updated_at",
+        "deletedAtColumn": null,
+        "encryptedColumns": []
+      },
+      {
+        "name": "intake_items",
+        "primaryKey": [
+          "user_id",
+          "id"
+        ],
+        "updatedAtColumn": "updated_at",
+        "deletedAtColumn": "deleted_at",
+        "encryptedColumns": []
+      },
+      {
+        "name": "pain_episodes",
+        "primaryKey": [
+          "user_id",
+          "id"
+        ],
+        "updatedAtColumn": "updated_at",
+        "deletedAtColumn": "deleted_at",
+        "encryptedColumns": [
+          "notes"
+        ]
+      },
+      {
+        "name": "diary_entries",
+        "primaryKey": [
+          "user_id",
+          "id"
+        ],
+        "updatedAtColumn": "updated_at",
+        "deletedAtColumn": "deleted_at",
+        "encryptedColumns": "all"
+      }
+    ],
+    "installSql": [
+      "CREATE TABLE IF NOT EXISTS _sync_meta (key TEXT PRIMARY KEY NOT NULL, value TEXT)",
+      "INSERT OR IGNORE INTO _sync_meta (key, value) VALUES ('applying', '0')",
+      "CREATE TABLE IF NOT EXISTS _sync_outbox (table_name TEXT NOT NULL, pk_json TEXT NOT NULL, op TEXT NOT NULL CHECK (op IN ('upsert', 'delete')), changed_at INTEGER NOT NULL, version INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (table_name, pk_json)) WITHOUT ROWID",
+      "CREATE TABLE IF NOT EXISTS _sync_records (record_name TEXT PRIMARY KEY NOT NULL, table_name TEXT NOT NULL, system_fields BLOB NOT NULL) WITHOUT ROWID",
+      "CREATE TRIGGER \"_sync_health_days_insert\" AFTER INSERT ON \"health_days\" WHEN (SELECT value FROM _sync_meta WHERE key = 'applying') IS NOT '1' BEGIN INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'health_days', json_array(CAST(NEW.\"user_id\" AS TEXT), CAST(NEW.\"day\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE true ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; END",
+      "CREATE TRIGGER \"_sync_health_days_update\" AFTER UPDATE ON \"health_days\" WHEN (SELECT value FROM _sync_meta WHERE key = 'applying') IS NOT '1' BEGIN INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'health_days', json_array(CAST(OLD.\"user_id\" AS TEXT), CAST(OLD.\"day\" AS TEXT)), 'delete', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE OLD.\"user_id\" IS NOT NEW.\"user_id\" OR OLD.\"day\" IS NOT NEW.\"day\" ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'health_days', json_array(CAST(NEW.\"user_id\" AS TEXT), CAST(NEW.\"day\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE true ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; END",
+      "CREATE TRIGGER \"_sync_health_days_delete\" AFTER DELETE ON \"health_days\" WHEN (SELECT value FROM _sync_meta WHERE key = 'applying') IS NOT '1' BEGIN INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'health_days', json_array(CAST(OLD.\"user_id\" AS TEXT), CAST(OLD.\"day\" AS TEXT)), 'delete', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE true ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; END",
+      "INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'health_days', json_array(CAST(\"user_id\" AS TEXT), CAST(\"day\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) FROM \"health_days\" WHERE true AND NOT EXISTS (SELECT 1 FROM _sync_meta WHERE key = 'backfilled:health_days') ON CONFLICT (table_name, pk_json) DO NOTHING",
+      "INSERT OR IGNORE INTO _sync_meta (key, value) VALUES ('backfilled:health_days', '1')",
+      "CREATE TRIGGER \"_sync_sleep_days_insert\" AFTER INSERT ON \"sleep_days\" WHEN (SELECT value FROM _sync_meta WHERE key = 'applying') IS NOT '1' BEGIN INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'sleep_days', json_array(CAST(NEW.\"user_id\" AS TEXT), CAST(NEW.\"day\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE true ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; END",
+      "CREATE TRIGGER \"_sync_sleep_days_update\" AFTER UPDATE ON \"sleep_days\" WHEN (SELECT value FROM _sync_meta WHERE key = 'applying') IS NOT '1' BEGIN INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'sleep_days', json_array(CAST(OLD.\"user_id\" AS TEXT), CAST(OLD.\"day\" AS TEXT)), 'delete', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE OLD.\"user_id\" IS NOT NEW.\"user_id\" OR OLD.\"day\" IS NOT NEW.\"day\" ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'sleep_days', json_array(CAST(NEW.\"user_id\" AS TEXT), CAST(NEW.\"day\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE true ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; END",
+      "CREATE TRIGGER \"_sync_sleep_days_delete\" AFTER DELETE ON \"sleep_days\" WHEN (SELECT value FROM _sync_meta WHERE key = 'applying') IS NOT '1' BEGIN INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'sleep_days', json_array(CAST(OLD.\"user_id\" AS TEXT), CAST(OLD.\"day\" AS TEXT)), 'delete', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE true ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; END",
+      "INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'sleep_days', json_array(CAST(\"user_id\" AS TEXT), CAST(\"day\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) FROM \"sleep_days\" WHERE true AND NOT EXISTS (SELECT 1 FROM _sync_meta WHERE key = 'backfilled:sleep_days') ON CONFLICT (table_name, pk_json) DO NOTHING",
+      "INSERT OR IGNORE INTO _sync_meta (key, value) VALUES ('backfilled:sleep_days', '1')",
+      "CREATE TRIGGER \"_sync_intake_items_insert\" AFTER INSERT ON \"intake_items\" WHEN (SELECT value FROM _sync_meta WHERE key = 'applying') IS NOT '1' BEGIN INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'intake_items', json_array(CAST(NEW.\"user_id\" AS TEXT), CAST(NEW.\"id\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE true ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; END",
+      "CREATE TRIGGER \"_sync_intake_items_update\" AFTER UPDATE ON \"intake_items\" WHEN (SELECT value FROM _sync_meta WHERE key = 'applying') IS NOT '1' BEGIN INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'intake_items', json_array(CAST(OLD.\"user_id\" AS TEXT), CAST(OLD.\"id\" AS TEXT)), 'delete', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE OLD.\"user_id\" IS NOT NEW.\"user_id\" OR OLD.\"id\" IS NOT NEW.\"id\" ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'intake_items', json_array(CAST(NEW.\"user_id\" AS TEXT), CAST(NEW.\"id\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE true ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; END",
+      "CREATE TRIGGER \"_sync_intake_items_delete\" AFTER DELETE ON \"intake_items\" WHEN (SELECT value FROM _sync_meta WHERE key = 'applying') IS NOT '1' BEGIN INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'intake_items', json_array(CAST(OLD.\"user_id\" AS TEXT), CAST(OLD.\"id\" AS TEXT)), 'delete', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE true ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; END",
+      "INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'intake_items', json_array(CAST(\"user_id\" AS TEXT), CAST(\"id\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) FROM \"intake_items\" WHERE true AND NOT EXISTS (SELECT 1 FROM _sync_meta WHERE key = 'backfilled:intake_items') ON CONFLICT (table_name, pk_json) DO NOTHING",
+      "INSERT OR IGNORE INTO _sync_meta (key, value) VALUES ('backfilled:intake_items', '1')",
+      "CREATE TRIGGER \"_sync_pain_episodes_insert\" AFTER INSERT ON \"pain_episodes\" WHEN (SELECT value FROM _sync_meta WHERE key = 'applying') IS NOT '1' BEGIN INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'pain_episodes', json_array(CAST(NEW.\"user_id\" AS TEXT), CAST(NEW.\"id\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE true ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; END",
+      "CREATE TRIGGER \"_sync_pain_episodes_update\" AFTER UPDATE ON \"pain_episodes\" WHEN (SELECT value FROM _sync_meta WHERE key = 'applying') IS NOT '1' BEGIN INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'pain_episodes', json_array(CAST(OLD.\"user_id\" AS TEXT), CAST(OLD.\"id\" AS TEXT)), 'delete', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE OLD.\"user_id\" IS NOT NEW.\"user_id\" OR OLD.\"id\" IS NOT NEW.\"id\" ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'pain_episodes', json_array(CAST(NEW.\"user_id\" AS TEXT), CAST(NEW.\"id\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE true ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; END",
+      "CREATE TRIGGER \"_sync_pain_episodes_delete\" AFTER DELETE ON \"pain_episodes\" WHEN (SELECT value FROM _sync_meta WHERE key = 'applying') IS NOT '1' BEGIN INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'pain_episodes', json_array(CAST(OLD.\"user_id\" AS TEXT), CAST(OLD.\"id\" AS TEXT)), 'delete', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE true ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; END",
+      "INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'pain_episodes', json_array(CAST(\"user_id\" AS TEXT), CAST(\"id\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) FROM \"pain_episodes\" WHERE true AND NOT EXISTS (SELECT 1 FROM _sync_meta WHERE key = 'backfilled:pain_episodes') ON CONFLICT (table_name, pk_json) DO NOTHING",
+      "INSERT OR IGNORE INTO _sync_meta (key, value) VALUES ('backfilled:pain_episodes', '1')",
+      "CREATE TRIGGER \"_sync_diary_entries_insert\" AFTER INSERT ON \"diary_entries\" WHEN (SELECT value FROM _sync_meta WHERE key = 'applying') IS NOT '1' BEGIN INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'diary_entries', json_array(CAST(NEW.\"user_id\" AS TEXT), CAST(NEW.\"id\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE true ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; END",
+      "CREATE TRIGGER \"_sync_diary_entries_update\" AFTER UPDATE ON \"diary_entries\" WHEN (SELECT value FROM _sync_meta WHERE key = 'applying') IS NOT '1' BEGIN INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'diary_entries', json_array(CAST(OLD.\"user_id\" AS TEXT), CAST(OLD.\"id\" AS TEXT)), 'delete', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE OLD.\"user_id\" IS NOT NEW.\"user_id\" OR OLD.\"id\" IS NOT NEW.\"id\" ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'diary_entries', json_array(CAST(NEW.\"user_id\" AS TEXT), CAST(NEW.\"id\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE true ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; END",
+      "CREATE TRIGGER \"_sync_diary_entries_delete\" AFTER DELETE ON \"diary_entries\" WHEN (SELECT value FROM _sync_meta WHERE key = 'applying') IS NOT '1' BEGIN INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'diary_entries', json_array(CAST(OLD.\"user_id\" AS TEXT), CAST(OLD.\"id\" AS TEXT)), 'delete', CAST(unixepoch('subsec') * 1000 AS INTEGER) WHERE true ON CONFLICT (table_name, pk_json) DO UPDATE SET op = excluded.op, changed_at = excluded.changed_at, version = version + 1; END",
+      "INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'diary_entries', json_array(CAST(\"user_id\" AS TEXT), CAST(\"id\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) FROM \"diary_entries\" WHERE true AND NOT EXISTS (SELECT 1 FROM _sync_meta WHERE key = 'backfilled:diary_entries') ON CONFLICT (table_name, pk_json) DO NOTHING",
+      "INSERT OR IGNORE INTO _sync_meta (key, value) VALUES ('backfilled:diary_entries', '1')",
+      "INSERT INTO _sync_meta (key, value) VALUES ('schema_version', '{\"format\":1,\"tables\":[{\"name\":\"health_days\",\"primaryKey\":[\"user_id\",\"day\"],\"updatedAtColumn\":\"updated_at\",\"deletedAtColumn\":null,\"encryptedColumns\":[]},{\"name\":\"sleep_days\",\"primaryKey\":[\"user_id\",\"day\"],\"updatedAtColumn\":\"updated_at\",\"deletedAtColumn\":null,\"encryptedColumns\":[]},{\"name\":\"intake_items\",\"primaryKey\":[\"user_id\",\"id\"],\"updatedAtColumn\":\"updated_at\",\"deletedAtColumn\":\"deleted_at\",\"encryptedColumns\":[]},{\"name\":\"pain_episodes\",\"primaryKey\":[\"user_id\",\"id\"],\"updatedAtColumn\":\"updated_at\",\"deletedAtColumn\":\"deleted_at\",\"encryptedColumns\":[\"notes\"]},{\"name\":\"diary_entries\",\"primaryKey\":[\"user_id\",\"id\"],\"updatedAtColumn\":\"updated_at\",\"deletedAtColumn\":\"deleted_at\",\"encryptedColumns\":\"all\"}]}') ON CONFLICT (key) DO UPDATE SET value = excluded.value"
+    ],
+    "resetSql": [
+      "DELETE FROM _sync_outbox",
+      "DELETE FROM _sync_records",
+      "INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'health_days', json_array(CAST(\"user_id\" AS TEXT), CAST(\"day\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) FROM \"health_days\" WHERE true ON CONFLICT (table_name, pk_json) DO NOTHING",
+      "INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'sleep_days', json_array(CAST(\"user_id\" AS TEXT), CAST(\"day\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) FROM \"sleep_days\" WHERE true ON CONFLICT (table_name, pk_json) DO NOTHING",
+      "INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'intake_items', json_array(CAST(\"user_id\" AS TEXT), CAST(\"id\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) FROM \"intake_items\" WHERE true ON CONFLICT (table_name, pk_json) DO NOTHING",
+      "INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'pain_episodes', json_array(CAST(\"user_id\" AS TEXT), CAST(\"id\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) FROM \"pain_episodes\" WHERE true ON CONFLICT (table_name, pk_json) DO NOTHING",
+      "INSERT INTO _sync_outbox (table_name, pk_json, op, changed_at) SELECT 'diary_entries', json_array(CAST(\"user_id\" AS TEXT), CAST(\"id\" AS TEXT)), 'upsert', CAST(unixepoch('subsec') * 1000 AS INTEGER) FROM \"diary_entries\" WHERE true ON CONFLICT (table_name, pk_json) DO NOTHING"
+    ]
+  }
+}

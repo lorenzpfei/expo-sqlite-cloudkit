@@ -1,0 +1,55 @@
+{
+  "name": "expo-sqlite-cloudkit",
+  "version": "0.1.0",
+  "description": "Sync expo-sqlite tables to the user's private iCloud database with CKSyncEngine",
+  "main": "build/index.js",
+  "types": "build/index.d.ts",
+  "files": [
+    "build",
+    "ios",
+    "plugin/build",
+    "app.plugin.js",
+    "expo-module.config.json"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && tsc -p plugin/tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test \"src/**/*.test.ts\" \"plugin/src/**/*.test.ts\"",
+    "prepack": "cp ../../README.md README.md && pnpm build",
+    "fixtures": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/write-fixtures.ts"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "expo-sqlite",
+    "cloudkit",
+    "icloud",
+    "sync",
+    "CKSyncEngine"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lorenzpfei/expo-sqlite-cloudkit.git",
+    "directory": "packages/expo-sqlite-cloudkit"
+  },
+  "bugs": {
+    "url": "https://github.com/lorenzpfei/expo-sqlite-cloudkit/issues"
+  },
+  "homepage": "https://github.com/lorenzpfei/expo-sqlite-cloudkit#readme",
+  "author": "Lorenz Pfeifer (https://github.com/lorenzpfei)",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/react": "~19.3.0",
+    "expo": "~58.0.23",
+    "expo-sqlite": "~58.0.15",
+    "react": "19.3.0",
+    "react-native": "0.88.1",
+    "typescript": "~6.0.3"
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "expo-sqlite": "*",
+    "react-native": "*"
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "name": "expo-sqlite-cloudkit-workspace",
+  "private": true,
+  "packageManager": "pnpm@11.21.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "pnpm --filter expo-sqlite-cloudkit build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm --filter expo-sqlite-cloudkit test",
+    "swift:test:linux": "scripts/swift-test-linux.sh"
+  }
+}
