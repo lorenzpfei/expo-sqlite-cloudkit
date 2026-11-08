@@ -1,0 +1,32 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          cache: pnpm
+      - run: npm install -g npm@latest
+      - run: pnpm install --frozen-lockfile
+      - name: Check that the tag matches the package version
+        run: test "v$(node -p "require('./packages/expo-sqlite-cloudkit/package.json').version")" = "$GITHUB_REF_NAME"
+      - run: pnpm build
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: npm publish --provenance --access public
+        working-directory: packages/expo-sqlite-cloudkit

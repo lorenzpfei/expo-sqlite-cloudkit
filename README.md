@@ -1,5 +1,9 @@
 # expo-sqlite-cloudkit
 
+[![npm](https://img.shields.io/npm/v/expo-sqlite-cloudkit)](https://www.npmjs.com/package/expo-sqlite-cloudkit)
+[![CI](https://github.com/lorenzpfei/expo-sqlite-cloudkit/actions/workflows/ci.yml/badge.svg)](https://github.com/lorenzpfei/expo-sqlite-cloudkit/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/npm/l/expo-sqlite-cloudkit)](https://github.com/lorenzpfei/expo-sqlite-cloudkit/blob/main/LICENSE)
+
 Sync the tables your Expo app already keeps in `expo-sqlite` to the user's private iCloud database, through Apple's `CKSyncEngine`. Your SQLite tables stay the source of truth: no new data layer, no server, no account system.
 
 > Status: experimental. The API may change before 1.0.
@@ -170,6 +174,8 @@ pnpm swift:test:linux     # Swift sync core in Docker (or: cd packages/sync-core
 ```
 
 The Swift sync core (`packages/sync-core`) has no CloudKit dependency and is tested with several simulated devices against an in-memory CloudKit stand-in. CI also runs it on macOS, unit-tests the `CKSyncEngine` adapter's pure parts and builds the example app for the iOS Simulator. Design decisions are in [docs/decisions.md](https://github.com/lorenzpfei/expo-sqlite-cloudkit/blob/main/docs/decisions.md).
+
+To release, raise `version` in `packages/expo-sqlite-cloudkit/package.json`, commit, and publish a GitHub release tagged `v<version>`. The Release workflow tests the package and publishes it to npm with provenance.
 
 ## License
 
