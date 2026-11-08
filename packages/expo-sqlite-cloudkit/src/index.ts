@@ -12,6 +12,9 @@ export async function configureSync(config: SyncConfig): Promise<void> {
   const schema = buildSchema(config.tables);
   const db = await openDatabaseAsync(config.databaseName, { useNewConnection: true }, config.directory);
   try {
+    if (config.encryptionKey !== undefined) {
+      await db.execAsync(`PRAGMA key = '${config.encryptionKey.replaceAll("'", "''")}'`);
+    }
     await db.execAsync('PRAGMA busy_timeout = 5000');
     await installSchema(
       {
@@ -24,7 +27,12 @@ export async function configureSync(config: SyncConfig): Promise<void> {
   } finally {
     await db.closeAsync();
   }
-  await native().configure(db.databasePath, config.containerIdentifier, JSON.stringify(schema));
+  await native().configure(
+    db.databasePath,
+    config.containerIdentifier,
+    JSON.stringify(schema),
+    config.encryptionKey ?? null,
+  );
 }
 
 export function syncNow(): Promise<void> {

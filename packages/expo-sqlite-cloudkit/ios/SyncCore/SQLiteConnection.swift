@@ -99,7 +99,7 @@ public final class SQLiteConnection: @unchecked Sendable {
   private let lock = NSRecursiveLock()
   private var transactionDepth = 0
 
-  public init(path: String, api: SQLiteFunctions) throws {
+  public init(path: String, api: SQLiteFunctions, key: String? = nil) throws {
     var db: OpaquePointer?
     let code = api.open(path, &db, Code.openReadWrite | Code.openCreate | Code.openFullMutex, nil)
     if code != Code.ok {
@@ -111,6 +111,9 @@ public final class SQLiteConnection: @unchecked Sendable {
     self.api = api
     self.handle = db
     _ = api.busyTimeout(db, 5000)
+    if let key {
+      try execute("PRAGMA key = '\(key.replacingOccurrences(of: "'", with: "''"))'")
+    }
     try execute("PRAGMA journal_mode = WAL")
   }
 

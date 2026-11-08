@@ -5,6 +5,7 @@ export type SyncConfig = {
   directory?: string;
   containerIdentifier: string;
   tables: readonly TableSyncConfig[];
+  encryptionKey?: string;
 };
 
 export type AccountStatus =

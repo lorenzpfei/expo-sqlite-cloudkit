@@ -8,12 +8,13 @@ public class ExpoSqliteCloudkitModule: Module {
 
     Events("onChange", "onStatus")
 
-    AsyncFunction("configure") { (databasePath: String, containerIdentifier: String, schemaJson: String) async throws in
+    AsyncFunction("configure") { (databasePath: String, containerIdentifier: String, schemaJson: String, encryptionKey: String?) async throws in
       guard #available(iOS 17.0, *) else { throw UnsupportedOSException() }
       let schema = try JSONDecoder().decode(SyncSchema.self, from: Data(schemaJson.utf8))
       (self.controller as? SyncController)?.stop()
       let path = databasePath.hasPrefix("file://") ? URL(string: databasePath)?.path ?? databasePath : databasePath
-      let controller = try SyncController(databasePath: path, containerIdentifier: containerIdentifier, schema: schema)
+      let controller = try SyncController(
+        databasePath: path, containerIdentifier: containerIdentifier, schema: schema, encryptionKey: encryptionKey)
       controller.onChange = { [weak self] tables in self?.sendEvent("onChange", ["tables": tables]) }
       controller.onStatus = { [weak self] status in self?.sendEvent("onStatus", status) }
       self.controller = controller

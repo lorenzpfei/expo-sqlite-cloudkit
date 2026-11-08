@@ -124,6 +124,8 @@ Local changes go out on their own within a few seconds. Call `syncNow()` for an 
 
 `databaseName` and an optional `directory` are the same values you pass to `expo-sqlite`.
 
+If you encrypt the database with SQLCipher (`useSQLCipher` in the `expo-sqlite` plugin), pass the same key as `encryptionKey`. It is applied with `PRAGMA key` on both connections the module opens, so a raw key in `x'…'` form works too.
+
 ## Data contract
 
 - Every synced table has a primary key. Key columns are `TEXT` or `INTEGER` and never `NULL`.

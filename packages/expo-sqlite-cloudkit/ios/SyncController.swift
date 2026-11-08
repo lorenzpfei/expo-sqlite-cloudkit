@@ -20,9 +20,9 @@ final class SyncController: @unchecked Sendable {
   private var lastError: String?
   private var pollTask: Task<Void, Never>?
 
-  init(databasePath: String, containerIdentifier: String, schema: SyncSchema) throws {
+  init(databasePath: String, containerIdentifier: String, schema: SyncSchema, encryptionKey: String?) throws {
     container = CKContainer(identifier: containerIdentifier)
-    db = try SQLiteConnection(path: databasePath, api: .expoSQLite)
+    db = try SQLiteConnection(path: databasePath, api: .expoSQLite, key: encryptionKey)
     coordinator = SyncCoordinator(connection: db, schema: schema)
     coordinator.onTablesChanged = { [weak self] tables in
       self?.onChange?(tables.sorted())

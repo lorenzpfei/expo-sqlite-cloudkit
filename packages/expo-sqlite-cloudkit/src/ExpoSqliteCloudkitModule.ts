@@ -8,7 +8,12 @@ type Events = {
 };
 
 declare class ExpoSqliteCloudkitNativeModule extends NativeModule<Events> {
-  configure(databasePath: string, containerIdentifier: string, schemaJson: string): Promise<void>;
+  configure(
+    databasePath: string,
+    containerIdentifier: string,
+    schemaJson: string,
+    encryptionKey: string | null,
+  ): Promise<void>;
   syncNow(): Promise<void>;
   getStatus(): Promise<SyncStatus>;
   accountStatus(): Promise<AccountStatus>;
